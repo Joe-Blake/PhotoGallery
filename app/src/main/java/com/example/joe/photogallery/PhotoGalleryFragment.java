@@ -66,6 +66,7 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private void setupAdapter() {
+        //后台触发回调是，需检查fragment是否与activity相关联
         if (isAdded()) {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
         }
@@ -97,6 +98,11 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
+    /**
+     * 1.Params：任务参数类型
+     * 2.Process：任务执行中返回进度值类型
+     * 3.Result：任务返回结果类型
+     */
     private class FetchItemsTask extends AsyncTask<Void, Void, List<GalleryItem>> {
 
         @Override
@@ -105,7 +111,7 @@ public class PhotoGalleryFragment extends Fragment {
         }
 
         @Override
-        protected void onPostExecute(List<GalleryItem> items) {
+        protected void onPostExecute(List<GalleryItem> items) {//在主线程中运行，在该方法中更新UI
             mItems = items;
             setupAdapter();
         }
