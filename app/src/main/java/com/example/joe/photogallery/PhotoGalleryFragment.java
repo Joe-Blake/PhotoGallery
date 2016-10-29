@@ -24,7 +24,9 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private RecyclerView mPhotoRecyclerView;
-    private List<GalleryItem> mItems = new ArrayList<>();
+    private List<GalleryItem> mItems;
+    private int currentPage = 1;
+
 
 
     public static PhotoGalleryFragment newInstance() {
@@ -35,7 +37,7 @@ public class PhotoGalleryFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemsTask().execute();
+        new FetchItemsTask().execute(currentPage);
 
     }
 
@@ -44,9 +46,25 @@ public class PhotoGalleryFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable
             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
+        mItems = new ArrayList<GalleryItem>();
         mPhotoRecyclerView = (RecyclerView) v.findViewById(R.id
                 .fragment_photo_gallery_recycler_view);
         mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        mPhotoRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (!recyclerView.canScrollVertically(1)) {
+                    currentPage++;
+                    new FetchItemsTask().execute(currentPage);
+                }
+            }
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+        });
 
         return v;
     }
@@ -66,7 +84,7 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private void setupAdapter() {
-        //后台触发回调是，需检查fragment是否与activity相关联
+        //后台触发回调时，需检查fragment是否与activity相关联
         if (isAdded()) {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
         }
@@ -103,17 +121,19 @@ public class PhotoGalleryFragment extends Fragment {
      * 2.Process：任务执行中返回进度值类型
      * 3.Result：任务返回结果类型
      */
-    private class FetchItemsTask extends AsyncTask<Void, Void, List<GalleryItem>> {
+    private class FetchItemsTask extends AsyncTask<Integer, Void, List<GalleryItem>> {
 
         @Override
-        protected List<GalleryItem> doInBackground(Void... params) {
-            return new FlickrFetchr().fetchItems();
+        protected List<GalleryItem> doInBackground(Integer... params) {
+            return new FlickrFetchr().fetchItems(params[0]);
         }
 
         @Override
         protected void onPostExecute(List<GalleryItem> items) {//在主线程中运行，在该方法中更新UI
-            mItems = items;
+
+            mItems.addAll(items);
             setupAdapter();
+            currentPage++;
         }
     }
 
